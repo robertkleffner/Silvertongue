@@ -1,4 +1,4 @@
-consonant = p t m n k h q w v l;
+consonant = p t m n k h ' w v l;
 vowel = i u e o a ;
 
 %cv = consonant-vowel;

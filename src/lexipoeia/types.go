@@ -29,6 +29,9 @@ func (syls SyllableSequence) IsContainedIn(sequence []string) bool {
 			index++
 		} else {
 			index = 0
+			if str == syls[index] {
+				index++
+			}
 		}
 
 		if index == len(syls) {
@@ -46,6 +49,7 @@ type Specification struct {
 	GenerateCount       int
 	Seed                int64
 	PhonemeVariables    map[string]PhonemeGroup
+	PhonemeNames        []string
 	SyllableVariables   map[string]Syllable
 	SyllableNames       []string
 	DisallowedSequences []SyllableSequence
@@ -68,7 +72,49 @@ func LoadSpecification(filename string) Specification {
 		panic(err.Error())
 	}
 
-	return parseSpecification(string(input))
+	spec := parseSpecification(string(input))
+	if !validateSpecification(spec) {
+		os.Exit(1)
+	}
+	return spec
+}
+
+func validateSpecification(spec Specification) bool {
+	// are all the disallowed sequences valid syllable names?
+	// only emit warnings for these
+	for _, seq := range spec.DisallowedSequences {
+		for _, name := range seq {
+			contains := false
+			for _, sylName := range spec.SyllableNames {
+				if sylName == name {
+					contains = true
+					break
+				}
+			}
+			if !contains {
+				fmt.Printf("Warning: name '%s' in a disallowed sequence is not a syllable variable name.\n", name)
+			}
+		}
+	}
+
+	// now make sure that every phoneme in the syllables corresponds to phoneme group name
+	for sylVar, syl := range spec.SyllableVariables {
+		for _, phoneme := range syl {
+			contains := false
+			for _, phoName := range spec.PhonemeNames {
+				if phoName == phoneme.GroupVariable {
+					contains = true
+					break
+				}
+			}
+			if !contains {
+				fmt.Printf("Error: name '%s' in syllable variable '%s' is not a defined phoneme group name.\n", phoneme.GroupVariable, sylVar)
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 func parseSpecification(input string) Specification {
@@ -87,6 +133,7 @@ func parseSpecification(input string) Specification {
 				switch lexeme.lexType {
 				case LEX_PHONEME_VARIABLE:
 					spec.PhonemeVariables[lexeme.value] = parsePhonemeVariable(lexer)
+					spec.PhonemeNames = append(spec.PhonemeNames, lexeme.value)
 				case LEX_SYLLABLE_VARIABLE:
 					spec.SyllableVariables[lexeme.value] = parseSyllableVariable(lexer)
 					spec.SyllableNames = append(spec.SyllableNames, lexeme.value)

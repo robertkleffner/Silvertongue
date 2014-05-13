@@ -167,7 +167,7 @@ type State func(*Lexer) State
 func lexDeclaration(l *Lexer) State {
 	l.SkipWhitespaceAndComment()
 	switch {
-	case l.AcceptPred(unicode.IsLetter):
+	case l.AcceptPred(validVariableName):
 		l.Backup()
 		return lexPhonemeVariable
 	case l.Accept("%"):
@@ -197,8 +197,8 @@ func lexSyllable(l *Lexer) State {
 		l.AcceptRun("0123456789")
 		l.Emit(LEX_NUMBER)
 	}
-	if l.AcceptPred(unicode.IsLetter) {
-		l.AcceptPredRun(unicode.IsLetter)
+	if l.AcceptPred(validVariableName) {
+		l.AcceptPredRun(validVariableName)
 		l.Emit(LEX_PHONEME_VARIABLE)
 		l.SkipWhitespaceAndComment()
 		if l.Accept("-") {
@@ -215,8 +215,8 @@ func lexSyllable(l *Lexer) State {
 }
 
 func lexPhoneme(l *Lexer) State {
-	if l.AcceptPred(unicode.IsLetter) {
-		l.AcceptPredRun(unicode.IsLetter)
+	if l.AcceptPred(validVariableName) {
+		l.AcceptPredRun(validVariableName)
 		l.Emit(LEX_PHONEME)
 		l.SkipWhitespaceAndComment()
 		if l.Accept(",") {
@@ -240,8 +240,8 @@ func lexSyllableVariable(l *Lexer) State {
 }
 
 func lexDisallowed(l *Lexer) State {
-	if l.AcceptPred(unicode.IsLetter) {
-		l.AcceptPredRun(unicode.IsLetter)
+	if l.AcceptPred(validVariableName) {
+		l.AcceptPredRun(validVariableName)
 		l.Emit(LEX_SYLLABLE_VARIABLE)
 		l.SkipWhitespaceAndComment()
 		if l.Accept("-") {
@@ -277,7 +277,7 @@ func lexConfigVariable(l *Lexer) State {
 }
 
 func lexVariable(l *Lexer, lexType LexemeType) State {
-	l.AcceptPredRun(unicode.IsLetter)
+	l.AcceptPredRun(validVariableName)
 	l.Emit(lexType)
 	l.SkipWhitespaceAndComment()
 	if !l.Accept("=:") {
@@ -286,4 +286,14 @@ func lexVariable(l *Lexer, lexType LexemeType) State {
 	l.Ignore()
 	l.SkipWhitespaceAndComment()
 	return nil
+}
+
+func validVariableName(char rune) bool {
+	return !unicode.IsSpace(char) && !unicode.IsDigit(char) &&
+		char != ';' && char != '(' &&
+		char != ')' && char != '#' &&
+		char != '!' && char != '%' &&
+		char != '=' && char != '-' &&
+		char != ':' && char != '?' &&
+		char != eof
 }
