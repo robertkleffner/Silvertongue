@@ -170,18 +170,22 @@ func parseSyllableVariable(l *Lexer) Syllable {
 		if lexeme.lexType == LEX_NUMBER {
 			num, err := strconv.ParseInt(lexeme.value, 10, 32)
 			if err != nil {
-				fmt.Printf("Bad number format: %s", lexeme.value)
+				fmt.Printf("Bad number format: %s\n", lexeme.value)
 				os.Exit(1)
 			}
 			lexeme = <-l.lexemes
 			p.PercentChance = int(num)
+			if p.PercentChance > 100 {
+				fmt.Println("Chance of phoneme can't be greater than 100%.")
+				os.Exit(1)
+			}
 		} else {
 			p.PercentChance = 100
 		}
 		if lexeme.lexType == LEX_PHONEME_VARIABLE {
 			p.GroupVariable = lexeme.value
 		} else {
-			fmt.Printf("Expected a phoneme variable name, but got %s", lexeme.value)
+			fmt.Printf("Expected a phoneme variable name, but got %s\n", lexeme.value)
 			os.Exit(1)
 		}
 
@@ -207,7 +211,7 @@ func parseConfigVariable(spec *Specification, lexeme Lexeme, l *Lexer) {
 	if next.lexType == LEX_NUMBER {
 		temp, err := strconv.ParseInt(next.value, 10, 64)
 		if err != nil {
-			fmt.Printf("Bad number format: %s", next.value)
+			fmt.Printf("Bad number format: %s\n", next.value)
 			os.Exit(1)
 		}
 		num = temp
@@ -227,7 +231,7 @@ func parseConfigVariable(spec *Specification, lexeme Lexeme, l *Lexer) {
 	case "seed":
 		spec.Seed = num
 	default:
-		fmt.Printf("Unknown config variable '%s'", lexeme.value)
+		fmt.Printf("Unknown config variable '%s'\n", lexeme.value)
 		os.Exit(1)
 	}
 }

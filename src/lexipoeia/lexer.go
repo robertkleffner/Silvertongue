@@ -295,5 +295,5 @@ func validVariableName(char rune) bool {
 		char != '!' && char != '%' &&
 		char != '=' && char != '-' &&
 		char != ':' && char != '?' &&
-		char != eof
+		char != ',' && char != eof
 }

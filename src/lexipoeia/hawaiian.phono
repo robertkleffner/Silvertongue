@@ -1,7 +1,7 @@
-consonant = p t m n k h ' w v l;
+consonant = p,t,m,n,k,h,',w,v,l;
 vowel = i u e o a ;
 
-%cv = consonant-vowel;
+%cv = consonant vowel;
 %cmv = ?75consonant-vowel;
 
 !cmv-cv;
