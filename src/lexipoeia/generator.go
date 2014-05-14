@@ -43,12 +43,12 @@ func nextWord(spec Specification) string {
 func nextSyllableCount(spec Specification) int {
 	min := spec.MeanSyllables
 	if spec.LowDeviation != 0 {
-		min = spec.MeanSyllables - rand.Intn(spec.LowDeviation)
+		min = spec.MeanSyllables - rand.Intn(spec.LowDeviation+1)
 	}
 
 	max := spec.MeanSyllables
 	if spec.HighDeviation != 0 {
-		max = spec.MeanSyllables + rand.Intn(spec.HighDeviation)
+		max = spec.MeanSyllables + rand.Intn(spec.HighDeviation+1)
 	}
 
 	syllables := min

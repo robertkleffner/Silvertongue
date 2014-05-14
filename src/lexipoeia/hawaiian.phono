@@ -9,5 +9,5 @@ vowel = i u e o a ;
 #mean: 3;
 #lowDeviation: 2;
 #highDeviation: 4;
-#words: 200;
+#words: 500;
 #seed: 12345;
