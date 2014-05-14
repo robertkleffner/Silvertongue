@@ -18,6 +18,8 @@ func main() {
 	output := ""
 	if flag.NArg() > 1 {
 		output = flag.Arg(1)
+	} else {
+		output = flag.Arg(0) + ".words"
 	}
 	Generate(spec, output)
 }
