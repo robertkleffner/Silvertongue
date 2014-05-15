@@ -58,7 +58,8 @@ type Specification struct {
 func LoadSpecification(filename string) Specification {
 	read, err := os.Open(filename)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println("Could not open the given input file; it may not exist.")
+		os.Exit(1)
 	}
 
 	defer func() {

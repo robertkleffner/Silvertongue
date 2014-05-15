@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -11,11 +12,13 @@ func Generate(spec Specification, filename string) {
 	if filename != "" {
 		temp, err := os.Create(filename)
 		if err != nil {
-			panic(err)
+			fmt.Println("Could not create the output file.")
+			os.Exit(1)
 		}
 		defer func() {
 			if err := temp.Close(); err != nil {
-				panic(err)
+				fmt.Println("Something went wrong while writing the file...")
+				os.Exit(1)
 			}
 		}()
 		out = temp
