@@ -7,7 +7,15 @@ import (
 	"strconv"
 )
 
-type PhonemeGroup []string
+type Phone struct {
+	Name   string
+	Chance int
+}
+
+type PhonemeGroup struct {
+	Phones []Phone
+	Count  int
+}
 
 type Phoneme struct {
 	GroupVariable string
@@ -115,6 +123,14 @@ func validateSpecification(spec Specification) bool {
 		}
 	}
 
+	// calculate the total number for each phoneme group variable
+	for name, group := range spec.PhonemeVariables {
+		for _, phone := range group.Phones {
+			group.Count += phone.Chance
+		}
+		spec.PhonemeVariables[name] = group
+	}
+
 	return true
 }
 
@@ -152,11 +168,22 @@ func parseSpecification(input string) Specification {
 
 func parsePhonemeVariable(l *Lexer) PhonemeGroup {
 	group := PhonemeGroup{}
+	group.Count = 0
 	for lexeme := range l.lexemes {
 		if lexeme.lexType == LEX_END_DECLARATION {
 			break
 		}
-		group = append(group, lexeme.value)
+		if lexeme.lexType == LEX_VARIABLE {
+			p := Phone{lexeme.value, 1}
+			group.Phones = append(group.Phones, p)
+		} else if lexeme.lexType == LEX_NUMBER {
+			num, err := strconv.ParseInt(lexeme.value, 10, 32)
+			if err != nil {
+				fmt.Printf("Bad number format: %s\n", lexeme.value)
+				os.Exit(1)
+			}
+			group.Phones[len(group.Phones)-1].Chance = int(num)
+		}
 	}
 	return group
 }
@@ -183,7 +210,7 @@ func parseSyllableVariable(l *Lexer) Syllable {
 		} else {
 			p.PercentChance = 100
 		}
-		if lexeme.lexType == LEX_PHONEME_VARIABLE {
+		if lexeme.lexType == LEX_VARIABLE {
 			p.GroupVariable = lexeme.value
 		} else {
 			fmt.Printf("Expected a phoneme variable name, but got %s\n", lexeme.value)

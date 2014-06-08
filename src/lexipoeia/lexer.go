@@ -21,12 +21,11 @@ const (
 	LEX_ERROR LexemeType = iota // error occurred, value is error message
 	LEX_EOF                     // end of file
 	LEX_PHONEME_VARIABLE
-	LEX_PHONEME
-	LEX_SYLLABLE_PART
 	LEX_SYLLABLE_VARIABLE
 	LEX_DISALLOWED
 	LEX_CONFIG_VARIABLE
 	LEX_NUMBER
+	LEX_VARIABLE
 	LEX_END_DECLARATION
 )
 
@@ -191,45 +190,24 @@ func lexPhonemeVariable(l *Lexer) State {
 	return lexPhoneme
 }
 
-func lexSyllable(l *Lexer) State {
-	if l.Accept("?") {
-		l.Ignore()
-		l.AcceptRun("0123456789")
-		l.Emit(LEX_NUMBER)
-	}
-	if l.AcceptPred(validVariableName) {
-		l.AcceptPredRun(validVariableName)
-		l.Emit(LEX_PHONEME_VARIABLE)
-		l.SkipWhitespaceAndComment()
-		if l.Accept("-") {
-			l.Ignore()
-		}
-		l.SkipWhitespaceAndComment()
-		return lexSyllable
-	} else if l.Accept(";") {
-		l.Emit(LEX_END_DECLARATION)
-		l.SkipWhitespaceAndComment()
-		return lexDeclaration
-	}
-	return l.Error("Improper syllable variable declaration.")
-}
-
 func lexPhoneme(l *Lexer) State {
+	// phonemes are letter strings, optionally followed by a number
 	if l.AcceptPred(validVariableName) {
 		l.AcceptPredRun(validVariableName)
-		l.Emit(LEX_PHONEME)
-		l.SkipWhitespaceAndComment()
-		if l.Accept(",") {
-			l.Ignore()
+		l.Emit(LEX_VARIABLE)
+		if l.Accept("0123456789") {
+			l.AcceptRun("0123456789")
+			l.Emit(LEX_NUMBER)
 		}
 		l.SkipWhitespaceAndComment()
 		return lexPhoneme
-	} else if l.Accept(";") {
+	}
+	if l.Accept(";") {
 		l.Emit(LEX_END_DECLARATION)
 		l.SkipWhitespaceAndComment()
 		return lexDeclaration
 	}
-	return l.Error("Expected either letters or ';' as symbol in phoneme group declaration.")
+	return l.Error(fmt.Sprintf("Possible unterminated phoneme group declaration: %s", l.Next()))
 }
 
 func lexSyllableVariable(l *Lexer) State {
@@ -239,22 +217,39 @@ func lexSyllableVariable(l *Lexer) State {
 	return lexSyllable
 }
 
-func lexDisallowed(l *Lexer) State {
+func lexSyllable(l *Lexer) State {
+	// syllables can optionally begin with a number
+	if l.Accept("0123456789") {
+		l.AcceptRun("0123456789")
+		l.Emit(LEX_NUMBER)
+	}
 	if l.AcceptPred(validVariableName) {
 		l.AcceptPredRun(validVariableName)
-		l.Emit(LEX_SYLLABLE_VARIABLE)
+		l.Emit(LEX_VARIABLE)
 		l.SkipWhitespaceAndComment()
-		if l.Accept("-") {
-			l.Ignore()
-		}
-		l.SkipWhitespaceAndComment()
-		return lexDisallowed
-	} else if l.Accept(";") {
+		return lexSyllable
+	}
+	if l.Accept(";") {
 		l.Emit(LEX_END_DECLARATION)
 		l.SkipWhitespaceAndComment()
 		return lexDeclaration
 	}
-	return l.Error("Improper disallowed statement.")
+	return l.Error(fmt.Sprintf("Invalid symbol '%s' in syllable variable definition.", l.Next()))
+}
+
+func lexDisallowed(l *Lexer) State {
+	if l.AcceptPred(validVariableName) {
+		l.AcceptPredRun(validVariableName)
+		l.Emit(LEX_VARIABLE)
+		l.SkipWhitespaceAndComment()
+		return lexDisallowed
+	}
+	if l.Accept(";") {
+		l.Emit(LEX_END_DECLARATION)
+		l.SkipWhitespaceAndComment()
+		return lexDeclaration
+	}
+	return l.Error(fmt.Sprintf("Disallowed statement contains invalid symbol (possibly unterminated): %s.", l.Next()))
 }
 
 func lexConfigVariable(l *Lexer) State {
@@ -271,9 +266,9 @@ func lexConfigVariable(l *Lexer) State {
 			l.SkipWhitespaceAndComment()
 			return lexDeclaration
 		}
-		return l.Error("Expected semicolon to terminate config variable declaration.")
+		return l.Error(fmt.Sprintf("Expected semicolon to terminate config variable declaration, but got '%s' instead.", l.Next()))
 	}
-	return l.Error("Config variables must take only integers as values.")
+	return l.Error(fmt.Sprintf("Config variables must take only integers as values, but got '%s' instead.", l.Next()))
 }
 
 func lexVariable(l *Lexer, lexType LexemeType) State {
@@ -281,7 +276,7 @@ func lexVariable(l *Lexer, lexType LexemeType) State {
 	l.Emit(lexType)
 	l.SkipWhitespaceAndComment()
 	if !l.Accept("=:") {
-		return l.Error("Expected '=' or ':' after variable name.")
+		return l.Error("Expected '=' or ':' after variable name declaration.")
 	}
 	l.Ignore()
 	l.SkipWhitespaceAndComment()
@@ -293,7 +288,6 @@ func validVariableName(char rune) bool {
 		char != ';' && char != '(' &&
 		char != ')' && char != '#' &&
 		char != '!' && char != '%' &&
-		char != '=' && char != '-' &&
-		char != ':' && char != '?' &&
-		char != ',' && char != eof
+		char != '=' && char != ':' &&
+		char != eof
 }

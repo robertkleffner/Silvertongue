@@ -79,7 +79,15 @@ func generateSyllable(syllableVariable string, spec Specification) string {
 
 func generatePhoneme(phonemeVariable string, spec Specification) string {
 	group := spec.PhonemeVariables[phonemeVariable]
-	return group[rand.Intn(len(group))]
+	index := rand.Intn(group.Count)
+	counter := 0
+	for i := 0; i < len(group.Phones)-2; i++ {
+		counter += group.Phones[i].Chance
+		if counter > index {
+			return group.Phones[i].Name
+		}
+	}
+	return group.Phones[len(group.Phones)-1].Name
 }
 
 func generateSequence(syllables int, spec Specification) []string {
